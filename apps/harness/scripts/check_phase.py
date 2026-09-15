@@ -212,7 +212,32 @@ def get_assumption_rows(brief_text: str) -> Tuple[List[str], List[List[str]]]:
 # 1. structure — design/brief.md
 # ---------------------------------------------------------------------------
 
-REQUIRED_STATES = ["초기", "빈", "로딩", "성공", "실패", "비활성"]
+# 화면 상태는 "빠짐없이 나열"이 아니라 "필요한 것만"이다.
+# 6종 전부를 요구하면 그 요구가 곧 생성 지시가 되어, 아무도 원하지 않은
+# 상태 프레임이 화면마다 쌓인다.
+ALLOWED_STATES = ["빈", "실패", "비활성"]
+# 화면 상태로 만들면 안 되는 것.
+#   로딩 → 짧은 대기는 Skeleton 컴포넌트. 긴 작업(결제·업로드 등)은 독립 화면
+#   성공 → 시간축 위의 다음 지점이므로 화면(예: 결제완료)
+#   초기 → default 와 중복
+FORBIDDEN_STATES = {
+    "로딩": "짧은 대기는 Skeleton 컴포넌트로, 긴 작업은 독립 화면으로 올린다",
+    "성공": "플로우의 다음 단계이므로 화면으로 만든다 (예: 주문서→결제중→결제완료)",
+    "초기": "default 와 중복이다",
+}
+# 화면당 상태 상한 (default 제외)
+MAX_STATES_PER_SCREEN = 2
+
+_PAREN_RE = re.compile(r"[(\uff08][^)\uff09]*[)\uff09]")
+
+
+def state_cell_body(cell_text: str) -> str:
+    """상태 셀에서 판정 대상만 남긴다.
+
+    괄호 안은 "…해당없음" 같은 **부정** 설명이 들어가는 자리다.
+    그대로 세면 안 쓰는 상태까지 쓰는 것으로 잡히는 오탐이 된다.
+    """
+    return _PAREN_RE.sub(" ", cell_text or "")
 
 
 def check_structure(design_dir: str) -> Optional[List[Result]]:
@@ -243,14 +268,22 @@ def check_structure(design_dir: str) -> Optional[List[Result]]:
                             path,
                             f"§1 화면 목록[{screen_name}] '{h}' 셀이 비어있음",
                         )
-                # 정의된 상태 6개 전부
-                state_cell = cell(row, idx_state)
-                missing = [s for s in REQUIRED_STATES if s not in state_cell]
-                if missing:
+                # 정의된 상태 — 허용 목록 안에서, 상한 이내로만
+                state_cell = state_cell_body(cell(row, idx_state))
+                for bad, why in FORBIDDEN_STATES.items():
+                    if bad in state_cell:
+                        rep.fail(
+                            "screens-state-layer",
+                            path,
+                            f"§1 화면 목록[{screen_name}] '정의된 상태'에 '{bad}' — {why}",
+                        )
+                used = [s for s in ALLOWED_STATES if s in state_cell]
+                if len(used) > MAX_STATES_PER_SCREEN:
                     rep.fail(
-                        "screens-states",
+                        "screens-state-cap",
                         path,
-                        f"§1 화면 목록[{screen_name}] '정의된 상태'에 {missing} 누락",
+                        f"§1 화면 목록[{screen_name}] '정의된 상태' {len(used)}개({'·'.join(used)}) "
+                        f"— 화면당 최대 {MAX_STATES_PER_SCREEN}개. 시나리오가 깨지는 것만 남긴다",
                     )
                 # primary 액션 정확히 1개
                 primary_cell = cell(row, idx_primary)

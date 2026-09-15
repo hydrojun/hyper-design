@@ -107,7 +107,8 @@ class StructureUnitTests(unittest.TestCase):
     def test_bad_fixture_detects_missing_state(self):
         results = cp.check_structure(DESIGN_BAD)
         names = [r.name for r in results if not r.ok]
-        self.assertIn("structure:screens-states", names)
+        self.assertIn("structure:screens-state-layer", names)
+        self.assertIn("structure:screens-state-cap", names)
 
     def test_bad_fixture_detects_unselected_platform(self):
         results = cp.check_structure(DESIGN_BAD)
