@@ -62,7 +62,8 @@
 | state.layer-screen | **같은 화면의 다른 모습**만. `empty`(데이터 0개) · `disabled`(읽기 전용 역할) · `error`(폼 인라인 검증 실패). 화면당 default 포함 **최대 3개** |
 | state.layer-flow | **시간축 위의 다른 지점**은 상태가 아니라 화면이다. 주문서 → 결제중 → 결제완료. `brief.md` §1 화면 목록에 **행으로 추가**한다 |
 | state.flow-trigger | 독립 화면으로 올리는 조건 — ① 외부 시스템 의존(결제·업로드·외부 생성 등) **또는** ② 처리 중 사용자가 화면을 떠날 수 없음(취소 불가·되돌릴 수 없음). 둘 다 아니면 Skeleton |
-| state.forbidden | 화면 상태 목록에 `loading`·`success`·`초기`를 쓰지 않는다. 앞의 둘은 층이 틀렸고, `초기`는 default 와 중복이다 |
+| state.forbidden | 화면 상태 목록에 `loading`·`success`·`initial`을 쓰지 않는다. 앞의 둘은 층이 틀렸고, `initial`은 default 와 중복이다 |
+| state.naming | 상태명은 **영어 소문자 고정**(`default`·`empty`·`error`·`disabled`). `brief.md`·`screens.md`·Figma 프레임 이름이 모두 같은 키를 쓴다. 문서 언어가 갈리면 같은 상태가 두 이름을 갖고 한쪽 게이트가 조용히 통과한다. 사용자에게 보이는 라벨만 쉬운 한국어로 옮긴다 |
 | state.edge-case | `long-title`·`many-items`·`text-120` 같은 경계값은 **상태가 아니다.** 상태 프레임으로 만들지 말고 default 프레임의 콘텐츠로 확인한다 |
 | state.derivation | 상태는 화면 속성에서 파생된다 — 목록 + 첫 사용 진입 → `empty` / 폼 → `error` / 읽기 전용 역할 존재 → `disabled`. 규칙으로 설명되지 않는 상태는 만들지 않는다 |
 

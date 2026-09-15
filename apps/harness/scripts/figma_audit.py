@@ -52,6 +52,14 @@ REUSE_THRESHOLD = 0.90                      # 컴포넌트 재사용률 하한
 # 그 목록이 곧 생성 지시가 되어(화면 10개 x 7 = 70프레임) 아무도 요구하지 않은
 # 프레임이 쌓인다. 선언이 없을 때의 최소값만 남긴다.
 BASE_SCREEN_STATE = "default"
+# 상태명은 영어 고정. 옛 한글 표기를 만나면 정규화해 판정하되 경고한다.
+LEGACY_STATE_ALIASES = {
+    "\ube48": "empty", "\uc2e4\ud328": "error", "\ube44\ud65c\uc131": "disabled",
+    "\ub85c\ub529": "loading", "\uc131\uacf5": "success", "\ucd08\uae30": "initial",
+}
+# 상태가 없음을 뜻하는 표기
+EMPTY_STATE_MARKERS = {"", "-", "\u2014", "none", "n/a", "na", "\uc5c6\uc74c",
+                       "\ud574\ub2f9\uc5c6\uc74c", "\ud574\ub2f9 \uc5c6\uc74c"}
 # 화면 상태로 만들면 안 되는 것 — 짧은 대기는 Skeleton 컴포넌트,
 # 긴 작업(결제·업로드 등)은 독립 화면으로 올린다.
 FORBIDDEN_SCREEN_STATES = {"loading", "success"}
@@ -433,11 +441,13 @@ def parse_screens_manifest(path):
         slug = row.get("slug") or ""
         if not comp_cell or not (screen or slug):
             continue
-        declared = [
-            part.strip().lower()
-            for part in re.split(r"[·,/]", state_cell)
-            if part.strip()
-        ]
+        state_body = re.sub(r"[(\uff08][^)\uff09]*[)\uff09]", " ", state_cell or "")
+        declared = []
+        for part in re.split(r"[\u00b7,/\uff0f\u3001;]|\s{2,}", state_body):
+            tok = part.strip().strip(".").lower()
+            if not tok or tok in EMPTY_STATE_MARKERS:
+                continue
+            declared.append(LEGACY_STATE_ALIASES.get(tok, tok))
         if declared:
             for key in (screen, slug):
                 if key:
